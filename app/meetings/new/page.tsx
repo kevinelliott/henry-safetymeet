@@ -30,9 +30,8 @@ export default function NewMeetingPage() {
   });
   const [error, setError] = useState("");
 
-  const supabase = getSupabaseClient();
-
   useEffect(() => {
+    const supabase = getSupabaseClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
@@ -40,7 +39,7 @@ export default function NewMeetingPage() {
         router.push("/dashboard");
       }
     });
-  }, [supabase, router]);
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +47,7 @@ export default function NewMeetingPage() {
     setLoading(true);
     setError("");
 
+    const supabase = getSupabaseClient();
     const { data, error: err } = await supabase
       .from("meetings")
       .insert({

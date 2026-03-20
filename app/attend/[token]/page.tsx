@@ -25,8 +25,6 @@ export default function AttendPage({ params }: Props) {
   const isDrawingRef = useRef(false);
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
 
-  const supabase = getSupabaseClient();
-
   // Resolve params
   useEffect(() => {
     params.then((p) => setToken(p.token));
@@ -34,6 +32,7 @@ export default function AttendPage({ params }: Props) {
 
   useEffect(() => {
     if (!token) return;
+    const supabase = getSupabaseClient();
     supabase
       .from("meetings")
       .select("*")
@@ -50,7 +49,7 @@ export default function AttendPage({ params }: Props) {
         }
         setLoading(false);
       });
-  }, [token, supabase]);
+  }, [token]);
 
   // Signature canvas helpers
   const getPos = (e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement) => {
@@ -129,6 +128,7 @@ export default function AttendPage({ params }: Props) {
       signatureData = canvas.toDataURL("image/png");
     }
 
+    const supabase = getSupabaseClient();
     const { data, error: err } = await supabase
       .from("attendances")
       .insert({

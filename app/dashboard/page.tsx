@@ -18,9 +18,8 @@ export default function DashboardPage() {
   const [authError, setAuthError] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
 
-  const supabase = getSupabaseClient();
-
   const loadMeetings = useCallback(async (userId: string) => {
+    const supabase = getSupabaseClient();
     const { data: meetingsData } = await supabase
       .from("meetings")
       .select("*")
@@ -41,9 +40,10 @@ export default function DashboardPage() {
       setMeetings(meetingsWithAttendances);
     }
     setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
+    const supabase = getSupabaseClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
@@ -65,12 +65,13 @@ export default function DashboardPage() {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase, loadMeetings]);
+  }, [loadMeetings]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthLoading(true);
     setAuthError("");
+    const supabase = getSupabaseClient();
 
     const { error } = isSignUp
       ? await supabase.auth.signUp({ email, password })
@@ -83,10 +84,12 @@ export default function DashboardPage() {
   };
 
   const handleSignOut = async () => {
+    const supabase = getSupabaseClient();
     await supabase.auth.signOut();
   };
 
   const closeMeeting = async (meetingId: string) => {
+    const supabase = getSupabaseClient();
     await supabase.from("meetings").update({ status: "closed" }).eq("id", meetingId);
     if (user) loadMeetings(user.id);
   };
@@ -489,6 +492,30 @@ export default function DashboardPage() {
                   <h4 className="font-semibold text-gray-900">
                     Attendees ({selectedMeeting.attendances.length})
                   </h4>
+                  {selectedMeeting.attendances.length > 0 && (
+                    <a
+                      href={`/api/meetings/${selectedMeeting.id}/export`}
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        const sb = getSupabaseClient();
+                        const { data: { session } } = await sb.auth.getSession();
+                        if (!session) return;
+                        const res = await fetch(`/api/meetings/${selectedMeeting.id}/export`, {
+                          headers: { Authorization: `Bearer ${session.access_token}` },
+                        });
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = res.headers.get("content-disposition")?.split('filename="')[1]?.replace('"', '') || "export.csv";
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="text-xs bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg font-medium hover:bg-green-100 transition-colors"
+                    >
+                      📊 Export CSV
+                    </a>
+                  )}
                 </div>
 
                 {selectedMeeting.attendances.length === 0 ? (
